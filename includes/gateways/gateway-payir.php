@@ -6,6 +6,8 @@ if (!defined('ABSPATH')) {
 
 class WC_Gateway_PayIr extends WC_Payment_Gateway {
 
+    private string $api_key;
+    private string $callback_url;
     public function __construct() {
         $this->id = 'payir';
         $this->method_title = 'درگاه Pay.ir';

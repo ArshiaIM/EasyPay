@@ -4,7 +4,16 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+//use WC_Payment_Gateway;
 class WC_Gateway_Mellat extends WC_Payment_Gateway {
+    private string $terminal;
+    private string $username;
+    private string $password;
+
+    public function is_available() {
+        return ($this->enabled === 'yes');
+    }
+
     public function __construct() {
         $this->id                 = 'mellat';
         $this->method_title       = 'بانک ملت';

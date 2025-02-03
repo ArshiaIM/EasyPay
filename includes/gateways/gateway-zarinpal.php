@@ -5,6 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 class WC_Gateway_Zarinpal extends WC_Payment_Gateway {
+    private string $merchant_id;
     public function __construct() {
         $this->id                 = 'zarinpal';
         $this->method_title       = 'زرین پال';
