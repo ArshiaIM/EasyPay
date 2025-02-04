@@ -4,6 +4,7 @@ if (!defined('ABSPATH')) {
     exit; // جلوگیری از دسترسی مستقیم
 }
 
+// Test
 class WC_Gateway_Zarinpal extends WC_Payment_Gateway
 {
     private string $merchant_id;
