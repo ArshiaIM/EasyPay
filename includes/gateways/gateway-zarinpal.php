@@ -4,9 +4,11 @@ if (!defined('ABSPATH')) {
     exit; // جلوگیری از دسترسی مستقیم
 }
 
-class WC_Gateway_Zarinpal extends WC_Payment_Gateway {
+class WC_Gateway_Zarinpal extends WC_Payment_Gateway
+{
     private string $merchant_id;
-    public function __construct() {
+    public function __construct()
+    {
         $this->id                 = 'zarinpal';
         $this->method_title       = 'زرین پال';
         $this->method_description = 'پرداخت از طریق زرین پال';
@@ -22,7 +24,19 @@ class WC_Gateway_Zarinpal extends WC_Payment_Gateway {
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
     }
 
-    public function init_form_fields() {
+    public function is_available()
+    {
+        if ($this->enabled !== 'yes' || !$this->merchant_id) {
+            add_action('admin_notices', function () {
+                echo '<div class="error"><p>درگاه پرداخت Zarinpal فعال نیست! لطفاً اطلاعات درگاه را در تنظیمات بررسی کنید.</p></div>';
+            });
+            return false;
+        }
+        return true;
+    }
+
+    public function init_form_fields()
+    {
         $this->form_fields = array(
             'enabled' => array(
                 'title'   => 'فعال‌سازی',
@@ -45,7 +59,8 @@ class WC_Gateway_Zarinpal extends WC_Payment_Gateway {
         );
     }
 
-    public function process_payment($order_id) {
+    public function process_payment($order_id)
+    {
         $order = wc_get_order($order_id);
         $amount = intval($order->get_total()) * 10; // تبدیل تومان به ریال
         $callback_url = add_query_arg('wc-api', $this->id, home_url('/'));
@@ -53,7 +68,7 @@ class WC_Gateway_Zarinpal extends WC_Payment_Gateway {
         $data = array(
             'merchant_id' => $this->merchant_id,
             'amount'      => $amount,
-            'callback_url'=> $callback_url,
+            'callback_url' => $callback_url,
             'description' => 'پرداخت سفارش شماره ' . $order->get_id()
         );
 

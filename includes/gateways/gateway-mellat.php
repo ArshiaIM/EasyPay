@@ -5,16 +5,16 @@ if (!defined('ABSPATH')) {
 }
 
 //use WC_Payment_Gateway;
-class WC_Gateway_Mellat extends WC_Payment_Gateway {
+class WC_Gateway_Mellat extends WC_Payment_Gateway
+{
     private string $terminal;
     private string $username;
     private string $password;
 
-    public function is_available() {
-        return ($this->enabled === 'yes');
-    }
 
-    public function __construct() {
+
+    public function __construct()
+    {
         $this->id                 = 'mellat';
         $this->method_title       = 'بانک ملت';
         $this->method_description = 'پرداخت از طریق درگاه بانک ملت';
@@ -23,7 +23,7 @@ class WC_Gateway_Mellat extends WC_Payment_Gateway {
         $this->init_form_fields();
         $this->init_settings();
 
-        $this->enabled   = $this->get_option('enabled');
+        $this->enabled   = $this->get_option('enabled', 'yes');
         $this->title     = $this->get_option('title');
         $this->terminal  = $this->get_option('terminal_id');
         $this->username  = $this->get_option('username');
@@ -32,7 +32,21 @@ class WC_Gateway_Mellat extends WC_Payment_Gateway {
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
     }
 
-    public function init_form_fields() {
+    public function is_available()
+    {
+        if (!$this->terminal || !$this->username || !$this->password) {
+            if (is_admin()) {
+                add_action('admin_notices', function () {
+                    echo '<div class="error"><p>درگاه پرداخت Mellat فعال نیست! لطفاً اطلاعات درگاه را در تنظیمات بررسی کنید.</p></div>';
+                });
+            }
+            return false;
+        }
+        return true;
+    }
+
+    public function init_form_fields()
+    {
         $this->form_fields = array(
             'enabled' => array(
                 'title'   => 'فعال‌سازی',
@@ -60,7 +74,8 @@ class WC_Gateway_Mellat extends WC_Payment_Gateway {
         );
     }
 
-    public function process_payment($order_id) {
+    public function process_payment($order_id)
+    {
         $order = wc_get_order($order_id);
         $amount = intval($order->get_total()) * 10;
         $callback_url = add_query_arg('wc-api', $this->id, home_url('/'));
@@ -73,7 +88,7 @@ class WC_Gateway_Mellat extends WC_Payment_Gateway {
             'Amount'     => $amount,
             'LocalDate'  => date('Ymd'),
             'LocalTime'  => date('His'),
-            'CallBackUrl'=> $callback_url
+            'CallBackUrl' => $callback_url
         );
 
         $response = wp_remote_post('https://bpm.shaparak.ir/pgwchannel/services/pgw?wsdl', array(
@@ -93,12 +108,9 @@ class WC_Gateway_Mellat extends WC_Payment_Gateway {
                 'result'   => 'success',
                 'redirect' => 'https://bpm.shaparak.ir/pgwchannel/startpay.mellat?RefId=' . $result->RefId
             );
-
         } else {
             wc_add_notice('خطا در پرداخت: ' . $result->Description, 'error');
             return;
         }
     }
-
 }
-

@@ -1,9 +1,13 @@
 <?php
-class WC_Gateway_Pasargad extends WC_Payment_Gateway {
+class WC_Gateway_Pasargad extends WC_Payment_Gateway
+{
     private string $merchant_code;
     private string $terminal_code;
 
-    public function __construct() {
+
+
+    public function __construct()
+    {
         $this->id                 = 'pasargad';
         $this->method_title       = 'بانک پاسارگاد';
         $this->method_description = 'پرداخت از طریق درگاه بانک پاسارگاد';
@@ -19,8 +23,22 @@ class WC_Gateway_Pasargad extends WC_Payment_Gateway {
 
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
     }
+    public function is_available()
+    {
+        if (!$this->merchant_code || !$this->terminal_code) {
+            if (is_admin()) {
+                add_action('admin_notices', function () {
+                    echo '<div class="error"><p>درگاه پرداخت Pasargad فعال نیست! لطفاً اطلاعات درگاه را در تنظیمات بررسی کنید.</p></div>';
+                });
+            }
+            return false;
+        }
+        return true;
+    }
 
-    public function init_form_fields() {
+
+    public function init_form_fields()
+    {
         $this->form_fields = array(
             'enabled' => array(
                 'title'   => 'فعال‌سازی',

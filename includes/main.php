@@ -8,22 +8,16 @@ if (!defined('ABSPATH')) {
 /**
  * بارگذاری خودکار همه درگاه‌ها
  */
-add_action( 'wp_footer', 'check_is_page_function', 10, 0 );
 
-function check_is_page_function() {
-    if ( is_page( 'your-page-slug' ) ) {
-        // کد مورد نظر شما در اینجا
-    }
-}
 function load_custom_gateways()
 {
-   
-    $gateway_files = glob(plugin_dir_path(__FILE__) . 'gateways/gateway-*.php');
-    foreach ($gateway_files as $file) {
-        require_once $file;
+    if (class_exists('WC_Payment_Gateway')) {
+        $gateway_files = glob(plugin_dir_path(__FILE__) . 'gateways/gateway-*.php');
+        foreach ($gateway_files as $file) {
+            require_once $file;
+        }
     }
 }
-
 add_action('plugins_loaded', 'load_custom_gateways');
 
 /**
@@ -40,7 +34,4 @@ function add_custom_gateway_classes($methods)
     }
     return $methods;
 }
-
 add_filter('woocommerce_payment_gateways', 'add_custom_gateway_classes');
-
-require_once plugin_dir_path(__FILE__) . 'hooks.php';

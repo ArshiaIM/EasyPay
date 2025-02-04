@@ -4,11 +4,14 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class WC_Gateway_PayIr extends WC_Payment_Gateway {
+class WC_Gateway_PayIr extends WC_Payment_Gateway
+{
 
     private string $api_key;
     private string $callback_url;
-    public function __construct() {
+
+    public function __construct()
+    {
         $this->id = 'payir';
         $this->method_title = 'درگاه Pay.ir';
         $this->method_description = 'پرداخت آنلاین با استفاده از Pay.ir';
@@ -26,11 +29,24 @@ class WC_Gateway_PayIr extends WC_Payment_Gateway {
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, [$this, 'process_admin_options']);
         add_action('woocommerce_api_wc_gateway_payir', [$this, 'handle_callback']);
     }
+    public function is_available()
+    {
+        if (!$this->api_key || !$this->callback_url) {
+            if (is_admin()) {
+                add_action('admin_notices', function () {
+                    echo '<div class="error"><p>درگاه پرداخت Pay.ir فعال نیست! لطفاً اطلاعات درگاه را در تنظیمات بررسی کنید.</p></div>';
+                });
+            }
+            return false;
+        }
+        return true;
+    }
 
     /**
      * تنظیمات صفحه مدیریت ووکامرس
      */
-    public function init_form_fields() {
+    public function init_form_fields()
+    {
         $this->form_fields = [
             'enabled' => [
                 'title' => 'فعال‌سازی',
@@ -58,7 +74,8 @@ class WC_Gateway_PayIr extends WC_Payment_Gateway {
     /**
      * ارسال درخواست پرداخت به Pay.ir
      */
-    public function process_payment($order_id) {
+    public function process_payment($order_id)
+    {
         $order = wc_get_order($order_id);
 
         $amount = $order->get_total();
@@ -86,7 +103,8 @@ class WC_Gateway_PayIr extends WC_Payment_Gateway {
     /**
      * بررسی وضعیت پرداخت و تایید سفارش
      */
-    public function handle_callback() {
+    public function handle_callback()
+    {
         if (!isset($_GET['token'])) {
             wp_die('توکن پرداخت یافت نشد.');
         }
@@ -119,7 +137,8 @@ class WC_Gateway_PayIr extends WC_Payment_Gateway {
     /**
      * ارسال درخواست به API
      */
-    private function send_request($url, $data) {
+    private function send_request($url, $data)
+    {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));

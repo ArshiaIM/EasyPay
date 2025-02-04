@@ -5,12 +5,14 @@ if (!defined('ABSPATH')) {
 }
 
 // درگاه پرداخت سامان
-class WC_Gateway_Saman extends WC_Payment_Gateway {
+class WC_Gateway_Saman extends WC_Payment_Gateway
+{
     private string $terminal;
     private string $username;
     private string $password;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->id                 = 'saman';
         $this->method_title       = 'بانک سامان';
         $this->method_description = 'پرداخت از طریق درگاه بانک سامان';
@@ -27,8 +29,22 @@ class WC_Gateway_Saman extends WC_Payment_Gateway {
 
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
     }
+    public function is_available()
+    {
+        if (!$this->terminal || !$this->username || !$this->password) {
+            if (is_admin()) {
+                add_action('admin_notices', function () {
+                    echo '<div class="error"><p>درگاه پرداخت Saman فعال نیست! لطفاً اطلاعات درگاه را در تنظیمات بررسی کنید.</p></div>';
+                });
+            }
+            return false;
+        }
+        return true;
+    }
 
-    public function init_form_fields() {
+
+    public function init_form_fields()
+    {
         $this->form_fields = array(
             'enabled' => array(
                 'title'   => 'فعال‌سازی',
@@ -58,10 +74,12 @@ class WC_Gateway_Saman extends WC_Payment_Gateway {
 }
 
 // درگاه پرداخت پارسیان
-class WC_Gateway_Parsian extends WC_Payment_Gateway {
+class WC_Gateway_Parsian extends WC_Payment_Gateway
+{
     private string $merchant_id;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->id                 = 'parsian';
         $this->method_title       = 'بانک پارسیان';
         $this->method_description = 'پرداخت از طریق درگاه بانک پارسیان';
@@ -77,7 +95,8 @@ class WC_Gateway_Parsian extends WC_Payment_Gateway {
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
     }
 
-    public function init_form_fields() {
+    public function init_form_fields()
+    {
         $this->form_fields = array(
             'enabled' => array(
                 'title'   => 'فعال‌سازی',
