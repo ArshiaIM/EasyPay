@@ -16,7 +16,7 @@ class WC_Gateway_Pasargad extends WC_Payment_Gateway
         $this->init_form_fields();
         $this->init_settings();
 
-        $this->enabled       = $this->get_option('enabled');
+        $this->enabled   = $this->get_option('enabled', 'yes');
         $this->title         = $this->get_option('title');
         $this->merchant_code = $this->get_option('merchant_code');
         $this->terminal_code = $this->get_option('terminal_code');

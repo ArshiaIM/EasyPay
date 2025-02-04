@@ -17,7 +17,7 @@ class WC_Gateway_Zarinpal extends WC_Payment_Gateway
         $this->init_form_fields();
         $this->init_settings();
 
-        $this->enabled     = $this->get_option('enabled');
+        $this->enabled   = $this->get_option('enabled', 'yes');
         $this->title       = $this->get_option('title');
         $this->merchant_id = $this->get_option('merchant_id');
 

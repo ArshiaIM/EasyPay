@@ -21,7 +21,7 @@ class WC_Gateway_Saman extends WC_Payment_Gateway
         $this->init_form_fields();
         $this->init_settings();
 
-        $this->enabled   = $this->get_option('enabled');
+        $this->enabled   = $this->get_option('enabled', 'yes');
         $this->title     = $this->get_option('title');
         $this->terminal  = $this->get_option('terminal_id');
         $this->username  = $this->get_option('username');
@@ -34,7 +34,6 @@ class WC_Gateway_Saman extends WC_Payment_Gateway
         if (!$this->terminal || !$this->username || !$this->password) {
             if (is_admin()) {
                 add_action('admin_notices', function () {
-                    echo '<div class="error"><p>درگاه پرداخت Saman فعال نیست! لطفاً اطلاعات درگاه را در تنظیمات بررسی کنید.</p></div>';
                 });
             }
             return false;

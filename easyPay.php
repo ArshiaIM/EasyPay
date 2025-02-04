@@ -30,7 +30,7 @@ function check_woocommerce_active()
 
 
 // اجرای تنظیمات افزونه
-if (check_woocommerce_active()) {
+if (true) {
     require_once plugin_dir_path(__FILE__) . 'includes/main.php';
     require_once plugin_dir_path(__FILE__) . 'includes/hooks/hooks.php';
 }
