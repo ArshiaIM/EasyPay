@@ -1,20 +1,14 @@
 <?php
 
-if (!defined('ABSPATH')) {
-    exit;
-}
-
-//use WC_Payment_Gateway;
-class WC_Gateway_Mellat extends WC_Payment_Gateway
+require plugin_dir_path(__FILE__) . '../bases/AR_Payment_Gateway_Base.php';
+class WC_Gateway_Mellat extends AR_Payment_Gateway_Base
 {
-    private string $terminal;
-    private string $username;
-    private string $password;
-
-
+    private string $merchant_code;
+    private string $terminal_code;
 
     public function __construct()
     {
+        parent::__construct();
         $this->id                 = 'mellat';
         $this->method_title       = 'بانک ملت';
         $this->method_description = 'پرداخت از طریق درگاه بانک ملت';
@@ -23,26 +17,16 @@ class WC_Gateway_Mellat extends WC_Payment_Gateway
         $this->init_form_fields();
         $this->init_settings();
 
-        $this->enabled   = $this->get_option('enabled', 'yes');
-        $this->title     = $this->get_option('title');
-        $this->terminal  = $this->get_option('terminal_id');
-        $this->username  = $this->get_option('username');
-        $this->password  = $this->get_option('password');
+        $this->enabled       = $this->get_option('enabled', 'no');
+        $this->title         = $this->get_option('title');
+        $this->merchant_code = $this->get_option('merchant_code');
+        $this->terminal_code = $this->get_option('terminal_code');
+
+        // تنظیمات اختصاصی این درگاه
+        $this->request_url    = 'https://bpm.shaparak.ir/pgwchannel/startpay.mellat'; // URL بانک ملت
+        $this->request_format = 'xml'; // این درگاه از XML پشتیبانی می‌کند
 
         add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
-    }
-
-    public function is_available()
-    {
-        if (!$this->terminal || !$this->username || !$this->password) {
-            if (is_admin()) {
-                add_action('admin_notices', function () {
-                    echo '<div class="error"><p>درگاه پرداخت Mellat فعال نیست! لطفاً اطلاعات درگاه را در تنظیمات بررسی کنید.</p></div>';
-                });
-            }
-            return false;
-        }
-        return true;
     }
 
     public function init_form_fields()
@@ -52,24 +36,20 @@ class WC_Gateway_Mellat extends WC_Payment_Gateway
                 'title'   => 'فعال‌سازی',
                 'type'    => 'checkbox',
                 'label'   => 'فعال‌سازی درگاه بانک ملت',
-                'default' => 'yes'
+                'default' => 'no'
             ),
             'title' => array(
                 'title'       => 'عنوان درگاه',
                 'type'        => 'text',
                 'default'     => 'پرداخت از طریق بانک ملت'
             ),
-            'terminal_id' => array(
-                'title' => 'شماره ترمینال',
+            'merchant_code' => array(
+                'title' => 'کد پذیرنده',
                 'type'  => 'text'
             ),
-            'username' => array(
-                'title' => 'نام کاربری',
+            'terminal_code' => array(
+                'title' => 'کد ترمینال',
                 'type'  => 'text'
-            ),
-            'password' => array(
-                'title' => 'رمز عبور',
-                'type'  => 'password'
             )
         );
     }
@@ -77,40 +57,32 @@ class WC_Gateway_Mellat extends WC_Payment_Gateway
     public function process_payment($order_id)
     {
         $order = wc_get_order($order_id);
-        $amount = intval($order->get_total()) * 10;
-        $callback_url = add_query_arg('wc-api', $this->id, home_url('/'));
 
+        // داده‌های پرداخت
         $data = array(
-            'TerminalId' => $this->terminal,
-            'UserName'   => $this->username,
-            'Password'   => $this->password,
-            'OrderId'    => $order_id,
-            'Amount'     => $amount,
-            'LocalDate'  => date('Ymd'),
-            'LocalTime'  => date('His'),
-            'CallBackUrl' => $callback_url
+            'TerminalId'    => $this->terminal_code,
+            'MerchantId'    => $this->merchant_code,
+            'Amount'        => intval($order->get_total()),
+            'OrderId'       => $order_id,
+            'CallbackURL'   => $this->callback_url,  // CallBack URL
         );
 
-        $response = wp_remote_post('https://bpm.shaparak.ir/pgwchannel/services/pgw?wsdl', array(
-            'body'    => json_encode($data),
-            'headers' => array('Content-Type' => 'application/json')
-        ));
+        // ارسال درخواست به بانک ملت با فرمت XML
+        $response = $this->send_request($data);
 
-        if (is_wp_error($response)) {
-            wc_add_notice('خطا در ارتباط با درگاه.', 'error');
-            return;
-        }
+        // پردازش پاسخ بانک
+        $body = simplexml_load_string(wp_remote_retrieve_body($response));
 
-        $result = json_decode(wp_remote_retrieve_body($response));
-
-        if ($result->ResCode == '0') {
+        // بررسی نتیجه درخواست
+        if ($body && isset($body->Result) && $body->Result == 'OK' && isset($body->Token)) {
             return array(
                 'result'   => 'success',
-                'redirect' => 'https://bpm.shaparak.ir/pgwchannel/startpay.mellat?RefId=' . $result->RefId
+                'redirect' => 'https://bpm.shaparak.ir/pgwchannel/startpay.mellat?' . http_build_query(array('token' => (string) $body->Token))
             );
         } else {
-            wc_add_notice('خطا در پرداخت: ' . $result->Description, 'error');
-            return;
+            wc_add_notice('خطا در دریافت توکن پرداخت از بانک ملت.', 'error');
+            return array('result' => 'failure');
         }
     }
 }
+?>

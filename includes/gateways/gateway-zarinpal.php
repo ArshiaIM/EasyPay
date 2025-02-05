@@ -5,11 +5,12 @@ if (!defined('ABSPATH')) {
 }
 
 // Test
-class WC_Gateway_Zarinpal extends WC_Payment_Gateway
+class WC_Gateway_Zarinpal extends AR_Payment_Gateway_Base
 {
     private string $merchant_id;
     public function __construct()
     {
+        parent::__construct();
         $this->id                 = 'zarinpal';
         $this->method_title       = 'زرین پال';
         $this->method_description = 'پرداخت از طریق زرین پال';
@@ -18,22 +19,17 @@ class WC_Gateway_Zarinpal extends WC_Payment_Gateway
         $this->init_form_fields();
         $this->init_settings();
 
-        $this->enabled   = $this->get_option('enabled', 'yes');
+        $this->enabled   = $this->get_option('enabled', 'no');
         $this->title       = $this->get_option('title');
         $this->merchant_id = $this->get_option('merchant_id');
 
-        add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
-    }
 
-    public function is_available()
-    {
-        if ($this->enabled !== 'yes' || !$this->merchant_id) {
-            add_action('admin_notices', function () {
-                echo '<div class="error"><p>درگاه پرداخت Zarinpal فعال نیست! لطفاً اطلاعات درگاه را در تنظیمات بررسی کنید.</p></div>';
-            });
-            return false;
-        }
-        return true;
+        // تنظیمات اختصاصی این درگاه
+        $this->request_url    = 'https://bpm.shaparak.ir/pgwchannel/startpay.mellat'; // URL بانک ملت
+        $this->request_format = 'xml'; // این درگاه از XML پشتیبانی می‌کند
+
+        
+        add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
     }
 
     public function init_form_fields()
@@ -43,7 +39,7 @@ class WC_Gateway_Zarinpal extends WC_Payment_Gateway
                 'title'   => 'فعال‌سازی',
                 'type'    => 'checkbox',
                 'label'   => 'فعال‌سازی زرین پال',
-                'default' => 'yes'
+                'default' => 'no'
             ),
             'title' => array(
                 'title'       => 'عنوان درگاه',
@@ -63,20 +59,15 @@ class WC_Gateway_Zarinpal extends WC_Payment_Gateway
     public function process_payment($order_id)
     {
         $order = wc_get_order($order_id);
-        $amount = intval($order->get_total()) * 10; // تبدیل تومان به ریال
-        $callback_url = add_query_arg('wc-api', $this->id, home_url('/'));
 
         $data = array(
             'merchant_id' => $this->merchant_id,
-            'amount'      => $amount,
-            'callback_url' => $callback_url,
+            'amount'      => $order->get_total(),
+            'callback_url' => $this->callback_url,
             'description' => 'پرداخت سفارش شماره ' . $order->get_id()
         );
 
-        $response = wp_remote_post('https://api.zarinpal.com/pg/v4/payment/request.json', array(
-            'body'    => json_encode($data),
-            'headers' => array('Content-Type' => 'application/json')
-        ));
+        $response = $this->send_request($data);
 
         if (is_wp_error($response)) {
             wc_add_notice('خطا در ارتباط با زرین پال.', 'error');
@@ -88,7 +79,7 @@ class WC_Gateway_Zarinpal extends WC_Payment_Gateway
         if ($result->data->code == 100) {
             return array(
                 'result'   => 'success',
-                'redirect' => 'https://www.zarinpal.com/pg/StartPay/' . $result->data->authority
+                'redirect' => 'https://www.sandbox.zarinpal.com/pg/StartPay/' . $result->data->authority
             );
         } else {
             wc_add_notice('خطا در پرداخت: ' . $result->errors->message, 'error');

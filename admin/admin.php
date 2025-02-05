@@ -5,7 +5,9 @@ add_action('admin_menu', function() {
         'گزارش پرداخت‌ها',
         'manage_options',
         'custom_payment_reports',
-        'custom_payment_reports_page'
+        'custom_payment_reports_page',
+        '',     // آیکون منو (اختیاری)
+    26   
     );
 });
 
